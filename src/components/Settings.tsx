@@ -29,7 +29,7 @@ export default ErrorBoundary.wrap(function Settings(props) {
     const sortedPlugins = React.useMemo(() => Object.values(Plugins).sort((a, b) => a.name.localeCompare(b.name)), []);
 
     return (
-        <Forms.FormSection tag="h1" title="Vencord">
+        <Forms.FormSection tag="h1" title="puhcordPC">
             <Forms.FormText>SettingsDir: {settingsDir}</Forms.FormText>
             <Flex style={{ marginTop: "8px", marginBottom: "8px" }}>
                 <Flex.Child>
@@ -62,7 +62,7 @@ export default ErrorBoundary.wrap(function Settings(props) {
             <Switch
                 value={settings.unsafeRequire}
                 onChange={v => settings.unsafeRequire = v}
-                note="Enables VencordNative.require. Useful for testing, very bad for security. Leave this off unless you need it."
+                note="Enables puhcordPCNative.require. Useful for testing, very bad for security. Leave this off unless you need it."
             >
                 Enable Unsafe Require
             </Switch>

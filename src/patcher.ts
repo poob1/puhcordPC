@@ -4,7 +4,7 @@ import installExt, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer";
 import { join } from "path";
 import { initIpc } from './ipcMain';
 
-console.log("[Vencord] Starting up...");
+console.log("[puhcordPC] Starting up...");
 
 class BrowserWindow extends electron.BrowserWindow {
     constructor(options: BrowserWindowConstructorOptions) {
