@@ -20,7 +20,7 @@ export default definePlugin({
                 replace: m => {
                     const idx = m.indexOf("Host") - 1;
                     const template = m.slice(0, idx);
-                    return `${m}, ${template}"Vencord ", "${gitHash}"), " "), ` +
+                    return `${m}, ${template}"puhcordPC ", "${gitHash}"), " "), ` +
                         `${template} "Electron ", versions.electron), " "), ` +
                         `${template} "Chrome ", versions.chrome), " ")`;
                 }
@@ -31,8 +31,8 @@ export default definePlugin({
         replacement: {
             match: /\{section:(.{1,2})\.SectionTypes\.HEADER,\s*label:(.{1,2})\.default\.Messages\.ACTIVITY_SETTINGS\}/,
             replace: (m, mod) =>
-                `{section:${mod}.SectionTypes.HEADER,label:"Vencord"},` +
-                `{section:"Vencord",label:"Vencord",element:Vencord.Components.Settings},` +
+                `{section:${mod}.SectionTypes.HEADER,label:"puhcordPC"},` +
+                `{section:"puhcordPC",label:"puhcordPC",element:Vencord.Components.Settings},` +
                 `{section:${mod}.SectionTypes.DIVIDER},${m}`
 
         }

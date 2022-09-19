@@ -5,7 +5,7 @@ import { join } from 'path';
 import { debounce } from "./utils/debounce";
 import IpcEvents from './utils/IpcEvents';
 
-const DATA_DIR = join(app.getPath("userData"), "..", "Vencord");
+const DATA_DIR = join(app.getPath("userData"), "..", "puhcordPC");
 const SETTINGS_DIR = join(DATA_DIR, "settings");
 const QUICKCSS_PATH = join(SETTINGS_DIR, "quickCss.css");
 const SETTINGS_FILE = join(SETTINGS_DIR, "settings.json");
