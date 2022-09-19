@@ -1,6 +1,7 @@
 # Vencord
+This is based on Vencord, the original Discord Client this is based upon. I only made puhcordPC for the funnies xd
 
-My own Discord Desktop mod :)
+below is the original description :p
 
 ## Features
 
