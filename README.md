@@ -16,12 +16,12 @@ below is the original description :p
 
 Make sure you have NodeJs and git installed. I will be using pnpm, you can use npm instead
 ```sh
-git clone https://github.com/Vendicated/Vencord
-cd Vencord
+git clone https://github.com/poob1/puhcordPC
+cd puhcordPC
 pnpm i
 pnpm build
 ```
-The builds are now in the dist/ folder (Vencord/dist).
+The builds are now in the dist/ folder (puhcordPC/dist).
 Now install with either the powershell/bash script or use [X1nto's installer](https://github.com/X1nto/VencordInstaller/releases/latest)
 
 ## Join
