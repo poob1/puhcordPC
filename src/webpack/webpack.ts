@@ -10,7 +10,15 @@ export const filters = {
         props.length === 1
             ? m => m[props[0]] !== void 0
             : m => props.every(p => m[p] !== void 0),
-    byDisplayName: (deezNuts: string): FilterFn => m => m.default?.displayName === deezNuts
+    byDisplayName: (deezNuts: string): FilterFn => m => m.default?.displayName === deezNuts,
+    byCode: (...code: string[]): FilterFn => m => {
+        if (typeof m !== "function") return false;
+        const s = Function.prototype.toString.call(m);
+        for (const c of code) {
+            if (!s.includes(c)) return false;
+        }
+        return true;
+    },
 };
 
 export const subscriptions = new Map<FilterFn, CallbackFn>();
@@ -32,15 +40,28 @@ export function find(filter: FilterFn, getDefault = true) {
 
     for (const key in cache) {
         const mod = cache[key];
-        if (mod?.exports && filter(mod.exports))
+        if (!mod?.exports) continue;
+
+        if (filter(mod.exports))
             return mod.exports;
-        if (mod?.exports?.default && filter(mod.exports.default))
+
+        if (typeof mod.exports !== "object") continue;
+
+        if (mod.exports.default && filter(mod.exports.default))
             return getDefault ? mod.exports.default : mod.exports;
+
+        // is 3 is the longest obfuscated export?
+        // the length check makes search about 20% faster
+        for (const nestedMod in mod.exports) if (nestedMod.length < 3) {
+            const nested = mod.exports[nestedMod];
+            if (nested && filter(nested)) return nested;
+        }
     }
 
     return null;
 }
 
+// TODO fix
 export function findAll(filter: FilterFn, getDefault = true) {
     if (typeof filter !== "function") throw new Error("Invalid filter. Expected a function got", filter);
 
