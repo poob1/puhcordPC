@@ -1,4 +1,5 @@
 import Plugins from "plugins";
+import { registerCommand, unregisterCommand } from "../api/Commands";
 import { Settings } from "../api/settings";
 import Logger from "../utils/logger";
 import { Patch, Plugin } from "../utils/types";
@@ -16,9 +17,9 @@ for (const plugin of Object.values(Plugins)) if (plugin.patches && Settings.plug
     }
 }
 
-export function startAll() {
-    for (const plugin in Plugins) if (Settings.plugins[plugin].enabled) {
-        startPlugin(Plugins[plugin]);
+export function startAllPlugins() {
+    for (const name in Plugins) if (Settings.plugins[name].enabled) {
+        startPlugin(Plugins[name]);
     }
 }
 
@@ -32,28 +33,55 @@ export function startPlugin(p: Plugin) {
         try {
             p.start();
             p.started = true;
-            return true;
-        } catch (err: any) {
-            logger.error(`Failed to start ${p.name}\n`, err);
+        } catch (e) {
+            logger.error(`Failed to start ${p.name}\n`, e);
             return false;
         }
     }
+
+    if (p.commands?.length) {
+        logger.info("Registering commands of plugin", p.name);
+        for (const cmd of p.commands) {
+            try {
+                registerCommand(cmd, p.name);
+            } catch (e) {
+                logger.error(`Failed to register command ${cmd.name}\n`, e);
+                return false;
+            }
+        }
+
+    }
+
+    return true;
 }
 
 export function stopPlugin(p: Plugin) {
     if (p.stop) {
         logger.info("Stopping plugin", p.name);
         if (!p.started) {
-            logger.warn(`${p.name} already stopped / never started`);
+            logger.warn(`${p.name} already stopped`);
             return false;
         }
         try {
             p.stop();
             p.started = false;
-            return true;
-        } catch (err: any) {
-            logger.error(`Failed to stop ${p.name}\n`, err);
+        } catch (e) {
+            logger.error(`Failed to stop ${p.name}\n`, e);
             return false;
         }
     }
+
+    if (p.commands?.length) {
+        logger.info("Unregistering commands of plugin", p.name);
+        for (const cmd of p.commands) {
+            try {
+                unregisterCommand(cmd.name);
+            } catch (e) {
+                logger.error(`Failed to unregister command ${cmd.name}\n`, e);
+                return false;
+            }
+        }
+    }
+
+    return true;
 }

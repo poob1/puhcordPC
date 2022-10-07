@@ -1,10 +1,10 @@
   import plugins from "plugins";
 import IpcEvents from "../utils/IpcEvents";
 import { React } from "../webpack/common";
-import { mergeDefaults } from '../utils/misc';
+import { mergeDefaults } from "../utils/misc";
 
 interface Settings {
-    unsafeRequire: boolean;
+    notifyAboutUpdates: boolean;
     useQuickCss: boolean;
     plugins: {
         [plugin: string]: {
@@ -15,10 +15,10 @@ interface Settings {
 }
 
 const DefaultSettings: Settings = {
-    unsafeRequire: false,
+    notifyAboutUpdates: true,
     useQuickCss: true,
     plugins: {}
-} as any;
+};
 
 for (const plugin in plugins) {
     DefaultSettings.plugins[plugin] = {
@@ -77,7 +77,7 @@ export const Settings = makeProxy(settings);
  * @returns Settings
  */
 export function useSettings() {
-    const [, forceUpdate] = React.useReducer(x => ({}), {});
+    const [, forceUpdate] = React.useReducer(() => ({}), {});
 
     React.useEffect(() => {
         subscriptions.add(forceUpdate);
