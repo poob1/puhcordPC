@@ -1,17 +1,50 @@
-import { humanFriendlyJoin, useAwaiter } from "../utils/misc";
-import Plugins from 'plugins';
+import { classes, humanFriendlyJoin, useAwaiter } from "../utils/misc";
+import Plugins from "plugins";
 import { useSettings } from "../api/settings";
 import IpcEvents from "../utils/IpcEvents";
 
-import { Button, Switch, Forms, React } from "../webpack/common";
+import { Button, Switch, Forms, React, Margins, Toasts, Alerts, Parser } from "../webpack/common";
 import ErrorBoundary from "./ErrorBoundary";
 import { startPlugin } from "../plugins";
-import { stopPlugin } from '../plugins/index';
-import { Flex } from './Flex';
+import { stopPlugin } from "../plugins/index";
+import { Flex } from "./Flex";
+import { ChangeList } from "../utils/ChangeList";
 
-export default ErrorBoundary.wrap(function Settings(props) {
+function showErrorToast(message: string) {
+    Toasts.show({
+        message,
+        type: Toasts.Type.FAILURE,
+        id: Toasts.genId(),
+        options: {
+            position: Toasts.Position.BOTTOM
+        }
+    });
+}
+
+export default ErrorBoundary.wrap(function Settings() {
     const [settingsDir, , settingsDirPending] = useAwaiter(() => VencordNative.ipc.invoke<string>(IpcEvents.GET_SETTINGS_DIR), "Loading...");
     const settings = useSettings();
+    const changes = React.useMemo(() => new ChangeList<string>(), []);
+
+    React.useEffect(() => {
+        return () => void (changes.hasChanges && Alerts.show({
+            title: "Restart required",
+            body: (
+                <>
+                    <p>The following plugins require a restart:</p>
+                    <div>{changes.map((s, i) => (
+                        <>
+                            {i > 0 && ", "}
+                            {Parser.parse("`" + s + "`")}
+                        </>
+                    ))}</div>
+                </>
+            ),
+            confirmText: "Restart now",
+            cancelText: "Later!",
+            onConfirm: () => location.reload()
+        }));
+    }, []);
 
     const depMap = React.useMemo(() => {
         const o = {} as Record<string, string[]>;
@@ -31,40 +64,60 @@ export default ErrorBoundary.wrap(function Settings(props) {
 
     return (
         <Forms.FormSection tag="h1" title="puhcordPC">
-            <Forms.FormText>SettingsDir: {settingsDir}</Forms.FormText>
-            <Flex style={{ marginTop: "8px", marginBottom: "8px" }}>
+            <Forms.FormTitle tag="h5">
+                Settings
+            </Forms.FormTitle>
+
+            <Forms.FormText>
+                SettingsDir: <code style={{ userSelect: "text", cursor: "text" }}>{settingsDir}</code>
+            </Forms.FormText>
+
+            {!IS_WEB && <Flex className={classes(Margins.marginBottom20)}>
                 <Button
-                    onClick={() => VencordNative.ipc.invoke(IpcEvents.OPEN_PATH, settingsDir)}
+                    onClick={() => window.DiscordNative.app.relaunch()}
+                    size={Button.Sizes.SMALL}
+                    color={Button.Colors.GREEN}
+                >
+                    Reload
+                </Button>
+                <Button
+                    onClick={() => window.DiscordNative.fileManager.showItemInFolder(settingsDir)}
                     size={Button.Sizes.SMALL}
                     disabled={settingsDirPending}
                 >
                     Launch Directory
                 </Button>
                 <Button
-                    onClick={() => VencordNative.ipc.invoke(IpcEvents.OPEN_PATH, settingsDir, "quickCss.css")}
+                    onClick={() => VencordNative.ipc.invoke(IpcEvents.OPEN_QUICKCSS)}
                     size={Button.Sizes.SMALL}
                     disabled={settingsDir === "Loading..."}
                 >
                     Open QuickCSS File
                 </Button>
-            </Flex>
+            </Flex>}
+            <Forms.FormDivider />
             <Forms.FormTitle tag="h5">Settings</Forms.FormTitle>
             <Switch
                 value={settings.useQuickCss}
-                onChange={v => settings.useQuickCss = v}
-                note="Enable QuickCss"
+                onChange={(v: boolean) => settings.useQuickCss = v}
+                note="Enable QuickCSS"
             >
                 Use QuickCss
             </Switch>
-            <Switch
-                value={settings.unsafeRequire}
-                onChange={v => settings.unsafeRequire = v}
-                note="Enables puhcordPCNative.require. Useful for testing, very bad for security. Leave this off unless you need it."
+            {!IS_WEB && <Switch
+                value={settings.notifyAboutUpdates}
+                onChange={(v: boolean) => settings.notifyAboutUpdates = v}
+                note="Shows a Toast on StartUp"
             >
-                Enable Unsafe Require
-            </Switch>
+                Get notified about new Updates
+            </Switch>}
+
             <Forms.FormDivider />
-            <Forms.FormTitle tag="h5">Plugins</Forms.FormTitle>
+
+            <Forms.FormTitle tag="h5" className={classes(Margins.marginTop20, Margins.marginBottom8)}>
+                Plugins
+            </Forms.FormTitle>
+
             {sortedPlugins.map(p => {
                 const enabledDependants = depMap[p.name]?.filter(d => settings.plugins[d].enabled);
                 const dependency = enabledDependants?.length;
@@ -76,25 +129,25 @@ export default ErrorBoundary.wrap(function Settings(props) {
                         value={settings.plugins[p.name].enabled || p.required || dependency}
                         onChange={v => {
                             settings.plugins[p.name].enabled = v;
+                            let needsRestart = Boolean(p.patches?.length);
                             if (v) {
                                 p.dependencies?.forEach(d => {
+                                    const dep = Plugins[d];
+                                    needsRestart ||= Boolean(dep.patches?.length && !settings.plugins[d].enabled);
                                     settings.plugins[d].enabled = true;
-                                    if (!Plugins[d].started && !stopPlugin) {
-                                        // TODO show notification
-                                        settings.plugins[p.name].enabled = false;
+                                    if (!needsRestart && !dep.started && !startPlugin(dep)) {
+                                        showErrorToast(`Failed to start dependency ${d}. Check the console for more info.`);
                                     }
                                 });
-                                if (!p.started && !startPlugin(p)) {
-                                    // TODO show notification
+                                if (!needsRestart && !p.started && !startPlugin(p)) {
+                                    showErrorToast(`Failed to start plugin ${p.name}. Check the console for more info.`);
                                 }
                             } else {
-                                if (p.started && !stopPlugin(p)) {
-                                    // TODO show notification
+                                if ((p.started || !p.start && p.commands?.length) && !stopPlugin(p)) {
+                                    showErrorToast(`Failed to stop plugin ${p.name}. Check the console for more info.`);
                                 }
                             }
-                            if (p.patches) {
-                                // TODO show notification
-                            }
+                            if (needsRestart) changes.handleChange(p.name);
                         }}
                         note={p.description}
                         tooltipNote={
