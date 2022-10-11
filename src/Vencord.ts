@@ -34,7 +34,7 @@ async function init() {
         if (isOutdated && Settings.notifyAboutUpdates)
             setTimeout(() => {
                 showNotice(
-                    "A Vencord update is available!",
+                    "A puhcordPC update is available!",
                     "View Update",
                     () => {
                         popNotice();
