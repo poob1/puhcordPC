@@ -43,7 +43,7 @@ async function init() {
                 );
             }, 10000);
     } catch (err) {
-        UpdateLogger.error("Failed to check for updates", err);
+        UpdateLogger.error("Failed to check for puhcordPC updates", err);
     }
 }
 
