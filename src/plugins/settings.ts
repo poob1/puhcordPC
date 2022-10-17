@@ -28,12 +28,15 @@ export default definePlugin({
         find: "Messages.ACTIVITY_SETTINGS",
         replacement: {
             match: /\{section:(.{1,2})\.ID\.HEADER,\s*label:(.{1,2})\..{1,2}\.Messages\.ACTIVITY_SETTINGS\}/,
-            replace: (m, mod) =>
-                `{section:${mod}.ID.HEADER,label:"puhcordPC"},` +
-                '{section:"VencordSetting",label:"puhcordPC",element:Vencord.Components.Settings},' +
-                '{section:"VencordUpdater",label:"Updater",element:Vencord.Components.Updater,predicate:()=>!IS_WEB},' +
-                `{section:${mod}.ID.DIVIDER},${m}`
-
+            replace: (m, mod) => {
+                const updater = !IS_WEB ? '{section:"VencordUpdater",label:"Updater",element:Vencord.Components.Updater},' : "";
+                return (
+                    `{section:${mod}.ID.HEADER,label:"puhcordPC"},` +
+                    '{section:"VencordSetting",label:"puhcordPC Settings",element:Vencord.Components.Settings},' +
+                    updater +
+                    `{section:${mod}.ID.DIVIDER},${m}`
+                );
+            }
         }
     }]
 });
