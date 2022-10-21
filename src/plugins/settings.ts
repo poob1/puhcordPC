@@ -1,11 +1,12 @@
-import definePlugin from "../utils/types";
 import gitHash from "git-hash";
+
 import { Devs } from "../utils/constants";
+import definePlugin from "../utils/types";
 
 export default definePlugin({
     name: "Settings",
     description: "Adds Settings UI and debug info",
-    authors: [Devs.Ven],
+    authors: [Devs.Ven, Devs.Megu],
     required: true,
     patches: [{
         find: "().versionHash",
@@ -31,8 +32,9 @@ export default definePlugin({
             replace: (m, mod) => {
                 const updater = !IS_WEB ? '{section:"VencordUpdater",label:"Updater",element:Vencord.Components.Updater},' : "";
                 return (
-                    `{section:${mod}.ID.HEADER,label:"puhcordPC"},` +
-                    '{section:"VencordSetting",label:"puhcordPC Settings",element:Vencord.Components.Settings},' +
+                    `{section:${mod}.ID.HEADER,label:"puhcord"},` +
+                    '{section:"VencordSetting",label:"puhcordPC",element:Vencord.Components.Settings},' +
+                    '{section:"VencordPlugins",label:"da plugins",element:Vencord.Components.PluginSettings},' +
                     updater +
                     `{section:${mod}.ID.DIVIDER},${m}`
                 );

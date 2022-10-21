@@ -1,12 +1,12 @@
-// Not the full props, only what is necessary for pronoundb plugin to work
-export interface MessageHeaderProps {
-    message: {
-        author: {
-            id: string;
-            bot: boolean;
-            system: boolean;
-        },
+import { User } from "discord-types/general";
+
+export interface UserProfileProps {
+    customStatus: JSX.Element,
+    displayProfile: {
+        // In the future (if discord ever uses their pronouns system) this taking priority can be a plugin setting
+        pronouns: string;
     };
+    user: User;
 }
 
 export interface PronounsResponse {
@@ -16,7 +16,6 @@ export interface PronounsResponse {
 export type PronounCode = keyof typeof PronounMapping;
 
 export const PronounMapping = {
-    unspecified: "Unspecified",
     hh: "He/Him",
     hi: "He/It",
     hs: "He/She",
@@ -36,5 +35,6 @@ export const PronounMapping = {
     any: "Any pronouns",
     other: "Other pronouns",
     ask: "Ask me my pronouns",
-    avoid: "Avoid pronouns, use my name"
+    avoid: "Avoid pronouns, use my name",
+    unspecified: "Unspecified"
 } as const;

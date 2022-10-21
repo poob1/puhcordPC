@@ -1,7 +1,7 @@
 import { Devs } from "../utils/constants";
 import definePlugin from "../utils/types";
 import { lazyWebpack, makeLazy } from "../utils/misc";
-import { ModalSize, openModal } from "../utils/modal";
+import { ModalRoot, ModalSize, openModal } from "../utils/modal";
 import { find } from "../webpack";
 import { React } from "../webpack/common";
 
@@ -15,28 +15,31 @@ export default definePlugin({
     description: "Makes Avatars/Banners in user profiles clickable, and adds Guild Context Menu Entries to View Banner/Icon.",
 
     openImage(url: string) {
-        openModal(() => (
-            <ImageModal
-                shouldAnimate={true}
-                original={url}
-                src={url}
-                renderLinkComponent={props => React.createElement(getMaskedLink(), props)}
-            />
-        ), { size: ModalSize.DYNAMIC });
+        openModal(modalProps => (
+            <ModalRoot size={ModalSize.DYNAMIC} {...modalProps}>
+                <ImageModal
+                    shouldAnimate={true}
+                    original={url}
+                    src={url}
+                    renderLinkComponent={props => React.createElement(getMaskedLink(), props)}
+                />
+            </ModalRoot>
+        ));
     },
 
     patches: [
         {
             find: "onAddFriend:",
             replacement: {
-                match: /\{src:(.{1,2}),avatarDecoration/,
+                // global because Discord has two components that are 99% identical with one small change ._.
+                match: /\{src:(.{1,2}),avatarDecoration/g,
                 replace: (_, src) => `{src:${src},onClick:()=>${OPEN_URL}${src}.replace(/\\?.+$/, "")+"?size=2048"),avatarDecoration`
             }
         }, {
             find: "().popoutNoBannerPremium",
             replacement: {
                 match: /style:.{0,10}\{\},(.{1,2})\)/,
-                replace: (m, bannerObj) => `onClick:${bannerObj}.backgroundImage&&(()=>${OPEN_URL}${bannerObj}.backgroundImage.replace("url(", "").replace(/(\\?size=.+)?\\)/, "?size=2048"))),${m}`
+                replace: (m, style) => `onClick:${style}.backgroundImage&&(${style}.cursor="pointer",()=>${OPEN_URL}${style}.backgroundImage.replace("url(", "").replace(/(\\?size=.+)?\\)/, "?size=2048"))),${m}`
             }
         }, {
             find: '"GuildContextMenu:',
@@ -46,7 +49,7 @@ export default definePlugin({
                     replace: (m, guild) => `_guild=${guild},${m}`
                 },
                 {
-                    match: /(?<=createElement\((.{1,5}),\{id:"leave-guild".{0,100}\,)(.{1,2}\.createElement)\((.{1,5}),null,(.{1,2})\)(?=\)\}function)/,
+                    match: /(?<=createElement\((.{1,5}),\{id:"leave-guild".{0,100},)(.{1,2}\.createElement)\((.{1,5}),null,(.{1,2})\)(?=\)\}function)/,
                     replace: (_, menu, createElement, menuGroup, copyIdElement) =>
                         `${createElement}(${menuGroup},null,[` +
                         `_guild.icon&&${createElement}(${menu},` +
