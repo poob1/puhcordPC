@@ -1,7 +1,25 @@
-import gitHash from "git-hash";
-import { PronounsFormat } from ".";
-import { debounce } from "../../utils";
+/*
+ * Vencord, a modification for Discord's desktop app
+ * Copyright (c) 2022 Vendicated and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+import { VENCORD_USER_AGENT } from "../../utils/constants";
+import { debounce } from "../../utils/debounce";
 import { Settings } from "../../Vencord";
+import { PronounsFormat } from ".";
 import { PronounCode, PronounMapping, PronounsResponse } from "./types";
 
 // A map of cached pronouns so the same request isn't sent twice
@@ -45,7 +63,7 @@ async function bulkFetchPronouns(ids: string[]): Promise<PronounsResponse> {
             method: "GET",
             headers: {
                 "Accept": "application/json",
-                "X-PronounDB-Source": `Vencord/${gitHash} (github.com/Vendicated/Vencord)`
+                "X-PronounDB-Source": VENCORD_USER_AGENT
             }
         });
         return await req.json()

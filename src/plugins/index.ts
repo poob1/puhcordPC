@@ -1,4 +1,22 @@
-import Plugins from "plugins";
+/*
+ * Vencord, a modification for Discord's desktop app
+ * Copyright (c) 2022 Vendicated and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+import Plugins from "~plugins";
 
 import { registerCommand, unregisterCommand } from "../api/Commands";
 import { Settings } from "../api/settings";
@@ -22,6 +40,26 @@ export function startAllPlugins() {
     for (const name in Plugins) if (Settings.plugins[name].enabled) {
         startPlugin(Plugins[name]);
     }
+}
+
+export function startDependenciesRecursive(p: Plugin) {
+    let restartNeeded = false;
+    const failures: string[] = [];
+    if (p.dependencies) for (const dep of p.dependencies) {
+        if (!Settings.plugins[dep].enabled) {
+            startDependenciesRecursive(Plugins[dep]);
+            // If the plugin has patches, don't start the plugin, just enable it.
+            if (Plugins[dep].patches) {
+                logger.warn(`Enabling dependency ${dep} requires restart.`);
+                Settings.plugins[dep].enabled = true;
+                restartNeeded = true;
+                continue;
+            }
+            const result = startPlugin(Plugins[dep]);
+            if (!result) failures.push(dep);
+        }
+    }
+    return { restartNeeded, failures };
 }
 
 export function startPlugin(p: Plugin) {

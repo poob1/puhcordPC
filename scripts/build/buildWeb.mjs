@@ -1,11 +1,32 @@
-// TODO: Modularise the plugins since both build scripts use them
+#!/usr/bin/node
+/*
+ * Vencord, a modification for Discord's desktop app
+ * Copyright (c) 2022 Vendicated and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
-import { createWriteStream, readFileSync } from "fs";
-import yazl from "yazl";
+
 import esbuild from "esbuild";
+import { zip } from "fflate";
+import { readFileSync, writeFileSync } from "fs";
+import { readFile } from "fs/promises";
+import { join } from "path";
+
 // wtf is this assert syntax
 import PackageJSON from "../../package.json" assert { type: "json" };
-import { commonOpts, gitHashPlugin, globPlugins } from "./common.mjs";
+import { commonOpts, fileIncludePlugin, gitHashPlugin, gitRemotePlugin, globPlugins } from "./common.mjs";
 
 /**
  * @type {esbuild.BuildOptions}
@@ -18,11 +39,14 @@ const commonOptions = {
     external: ["plugins", "git-hash"],
     plugins: [
         globPlugins,
-        gitHashPlugin
+        gitHashPlugin,
+        gitRemotePlugin,
+        fileIncludePlugin
     ],
     target: ["esnext"],
     define: {
-        IS_WEB: "true"
+        IS_WEB: "true",
+        IS_STANDALONE: "true"
     }
 };
 
@@ -47,13 +71,20 @@ await Promise.all(
     ]
 );
 
-const zip = new yazl.ZipFile();
-zip.outputStream.pipe(createWriteStream("dist/extension.zip")).on("close", () => {
-    console.info("Extension written to dist/extension.zip");
+zip({
+    dist: {
+        "Vencord.js": readFileSync("dist/browser.js")
+    },
+    ...Object.fromEntries(await Promise.all(["background.js", "content.js", "manifest.json"].map(async f => [
+        f,
+        await readFile(join("browser", f))
+    ]))),
+}, {}, (err, data) => {
+    if (err) {
+        console.error(err);
+        process.exitCode = 1;
+    } else {
+        writeFileSync("dist/extension.zip", data);
+        console.info("Extension written to dist/extension.zip");
+    }
 });
-
-zip.addFile("dist/browser.js", "dist/Vencord.js");
-["background.js", "content.js", "manifest.json"].forEach(f => {
-    zip.addFile(`browser/${f}`, `${f}`);
-});
-zip.end();
