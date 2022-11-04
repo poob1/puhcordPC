@@ -23,6 +23,7 @@ import { dirname, join } from "path";
 import { initIpc } from "./ipcMain";
 import { installExt } from "./ipcMain/extensions";
 import { readSettings } from "./ipcMain/index";
+import { onceDefined } from "./utils/onceDefined";
 
 console.log("[puhcordPC] Starting up...");
 
@@ -74,15 +75,9 @@ require.cache[electronPath]!.exports = {
 };
 
 // Patch appSettings to force enable devtools
-Object.defineProperty(global, "appSettings", {
-    set: (v: typeof global.appSettings) => {
-        v.set("DANGEROUS_ENABLE_DEVTOOLS_ONLY_ENABLE_IF_YOU_KNOW_WHAT_YOURE_DOING", true);
-        // @ts-ignore
-        delete global.appSettings;
-        global.appSettings = v;
-    },
-    configurable: true
-});
+onceDefined(global, "appSettings", s =>
+    s.set("DANGEROUS_ENABLE_DEVTOOLS_ONLY_ENABLE_IF_YOU_KNOW_WHAT_YOURE_DOING", true)
+);
 
 process.env.DATA_DIR = join(app.getPath("userData"), "..", "Vencord");
 
@@ -111,11 +106,25 @@ electron.app.whenReady().then(() => {
                 .catch(err => console.error("[Vencord] Failed to install React Developer Tools", err));
     } catch { }
 
+
     // Remove CSP
+    function patchCsp(headers: Record<string, string[]>, header: string) {
+        if (header in headers) {
+            let patchedHeader = headers[header][0];
+            for (const directive of ["style-src", "connect-src", "img-src", "font-src"]) {
+                patchedHeader = patchedHeader.replace(new RegExp(`${directive}.+?;`), `${directive} * blob: data: 'unsafe-inline';`);
+            }
+            // TODO: Restrict this to only imported packages with fixed version.
+            // Perhaps auto generate with esbuild
+            patchedHeader = patchedHeader.replace(/script-src.+?(?=;)/, "$& 'unsafe-eval' https://unpkg.com https://cdnjs.cloudflare.com");
+            headers[header] = [patchedHeader];
+        }
+    }
+
     electron.session.defaultSession.webRequest.onHeadersReceived(({ responseHeaders, url }, cb) => {
         if (responseHeaders) {
-            delete responseHeaders["content-security-policy-report-only"];
-            delete responseHeaders["content-security-policy"];
+            patchCsp(responseHeaders, "content-security-policy");
+            patchCsp(responseHeaders, "content-security-policy-report-only");
 
             // Fix hosts that don't properly set the content type, such as
             // raw.githubusercontent.com
