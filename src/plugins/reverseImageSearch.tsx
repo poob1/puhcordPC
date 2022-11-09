@@ -17,9 +17,8 @@
 */
 
 import { Devs } from "../utils/constants";
-import { lazyWebpack } from "../utils/misc";
 import definePlugin from "../utils/types";
-import { filters } from "../webpack";
+import { Menu } from "../webpack/common";
 
 const Engines = {
     Google: "https://www.google.com/searchbyimage?image_url=",
@@ -28,9 +27,6 @@ const Engines = {
     IQDB: "https://iqdb.org/?url=",
     TinEye: "https://www.tineye.com/search?url="
 };
-
-const Menu = lazyWebpack(filters.byProps("MenuItem"));
-
 
 export default definePlugin({
     name: "ReverseImageSearch",
@@ -42,11 +38,27 @@ export default definePlugin({
         replacement: {
             match: /key:"open-native-link".{0,200}\(\{href:(.{0,3}),.{0,200}\}\)/,
             replace: (m, src) =>
-                `${m},Vencord.Plugins.plugins.ReverseImageSearch.makeMenu(${src})`
+                `${m},Vencord.Plugins.plugins.ReverseImageSearch.makeMenu(${src}, arguments[2])`
+        }
+    }, {
+        // pass the target to the open link menu so we can check if it's an image
+        find: "REMOVE_ALL_REACTIONS_CONFIRM_BODY,",
+        replacement: {
+            // url1 = url2 = props.attachment.url
+            // ...
+            // OpenLinks(url2 != null ? url2 : url1, someStuffs)
+            //
+            // the back references are needed because the code is like Z(a!=null?b:c,d), no way to match that
+            // otherwise
+            match: /(?<props>.).onHeightUpdate.{0,200}(.)=(.)=.\.url;.+?\(null!=\3\?\3:\2[^)]+/,
+            replace: "$&,$<props>.target"
         }
     }],
 
-    makeMenu(src: string) {
+    makeMenu(src: string, target: HTMLElement) {
+        if (target && target.attributes["data-role"]?.value !== "img")
+            return null;
+
         return (
             <Menu.MenuItem
                 label="Search Image"
