@@ -64,7 +64,7 @@ export default definePlugin({
                 : "";
         return (
             <>
-                <Component {...props}>puhcordPC{gitHash}{additionalInfo}</Component>
+                <Component {...props}>puhcordPC {gitHash}{additionalInfo}</Component>
                 <Component {...props}>da electric {VencordNative.getVersions().electron}</Component>
                 <Component {...props}>da chromium {VencordNative.getVersions().chrome}</Component>
             </>
