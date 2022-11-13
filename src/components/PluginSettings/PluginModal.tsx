@@ -21,23 +21,26 @@ import { Constructor } from "type-fest";
 
 import { generateId } from "../../api/Commands";
 import { useSettings } from "../../api/settings";
-import { lazyWebpack, proxyLazy } from "../../utils";
+import { LazyComponent, lazyWebpack } from "../../utils/misc";
 import { ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize } from "../../utils/modal";
+import { proxyLazy } from "../../utils/proxyLazy";
 import { OptionType, Plugin } from "../../utils/types";
-import { filters } from "../../webpack";
+import { filters, findByCode } from "../../webpack";
 import { Button, FluxDispatcher, Forms, React, Text, Tooltip, UserStore, UserUtils } from "../../webpack/common";
 import ErrorBoundary from "../ErrorBoundary";
 import { Flex } from "../Flex";
 import {
+    ISettingElementProps,
     SettingBooleanComponent,
-    SettingInputComponent,
+    SettingCustomComponent,
     SettingNumericComponent,
     SettingSelectComponent,
     SettingSliderComponent,
+    SettingTextComponent
 } from "./components";
 
-const UserSummaryItem = lazyWebpack(filters.byCode("defaultRenderUser", "showDefaultAvatarsForNullUsers"));
-const AvatarStyles = lazyWebpack(filters.byProps(["moreUsers", "emptyUser", "avatarContainer", "clickableAvatar"]));
+const UserSummaryItem = LazyComponent(() => findByCode("defaultRenderUser", "showDefaultAvatarsForNullUsers"));
+const AvatarStyles = lazyWebpack(filters.byProps("moreUsers", "emptyUser", "avatarContainer", "clickableAvatar"));
 const UserRecord: Constructor<Partial<User>> = proxyLazy(() => UserStore.getCurrentUser().constructor) as any;
 
 interface PluginModalProps extends ModalProps {
@@ -59,6 +62,16 @@ function makeDummyUser(user: { name: string, id: BigInt; }) {
     return newUser;
 }
 
+const Components: Record<OptionType, React.ComponentType<ISettingElementProps<any>>> = {
+    [OptionType.STRING]: SettingTextComponent,
+    [OptionType.NUMBER]: SettingNumericComponent,
+    [OptionType.BIGINT]: SettingNumericComponent,
+    [OptionType.BOOLEAN]: SettingBooleanComponent,
+    [OptionType.SELECT]: SettingSelectComponent,
+    [OptionType.SLIDER]: SettingSliderComponent,
+    [OptionType.COMPONENT]: SettingCustomComponent
+};
+
 export default function PluginModal({ plugin, onRestartNeeded, onClose, transitionState }: PluginModalProps) {
     const [authors, setAuthors] = React.useState<Partial<User>[]>([]);
 
@@ -67,23 +80,35 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
     const [tempSettings, setTempSettings] = React.useState<Record<string, any>>({});
 
     const [errors, setErrors] = React.useState<Record<string, boolean>>({});
+    const [saveError, setSaveError] = React.useState<string | null>(null);
 
     const canSubmit = () => Object.values(errors).every(e => !e);
 
     React.useEffect(() => {
         (async () => {
             for (const user of plugin.authors.slice(0, 6)) {
-                const author = user.id ? await UserUtils.fetchUser(`${user.id}`).catch(() => null) : makeDummyUser(user);
-                setAuthors(a => [...a, author || makeDummyUser(user)]);
+                const author = user.id
+                    ? await UserUtils.fetchUser(`${user.id}`).catch(() => makeDummyUser(user))
+                    : makeDummyUser(user);
+                setAuthors(a => [...a, author]);
             }
         })();
     }, []);
 
-    function saveAndClose() {
+    async function saveAndClose() {
         if (!plugin.options) {
             onClose();
             return;
         }
+
+        if (plugin.beforeSave) {
+            const result = await Promise.resolve(plugin.beforeSave(tempSettings));
+            if (result !== true) {
+                setSaveError(result);
+                return;
+            }
+        }
+
         let restartNeeded = false;
         for (const [key, value] of Object.entries(tempSettings)) {
             const option = plugin.options[key];
@@ -100,9 +125,8 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
             return <Forms.FormText>There are no settings for this plugin.</Forms.FormText>;
         }
 
-        const options: JSX.Element[] = [];
-        for (const [key, setting] of Object.entries(plugin.options)) {
-            function onChange(newValue) {
+        const options = Object.entries(plugin.options).map(([key, setting]) => {
+            function onChange(newValue: any) {
                 setTempSettings(s => ({ ...s, [key]: newValue }));
             }
 
@@ -110,31 +134,19 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
                 setErrors(e => ({ ...e, [key]: hasError }));
             }
 
-            const props = { onChange, pluginSettings, id: key, onError };
-            switch (setting.type) {
-                case OptionType.SELECT: {
-                    options.push(<SettingSelectComponent key={key} option={setting} {...props} />);
-                    break;
-                }
-                case OptionType.STRING: {
-                    options.push(<SettingInputComponent key={key} option={setting} {...props} />);
-                    break;
-                }
-                case OptionType.NUMBER:
-                case OptionType.BIGINT: {
-                    options.push(<SettingNumericComponent key={key} option={setting} {...props} />);
-                    break;
-                }
-                case OptionType.BOOLEAN: {
-                    options.push(<SettingBooleanComponent key={key} option={setting} {...props} />);
-                    break;
-                }
-                case OptionType.SLIDER: {
-                    options.push(<SettingSliderComponent key={key} option={setting} {...props} />);
-                    break;
-                }
-            }
-        }
+            const Component = Components[setting.type];
+            return (
+                <Component
+                    id={key}
+                    key={key}
+                    option={setting}
+                    onChange={onChange}
+                    onError={onError}
+                    pluginSettings={pluginSettings}
+                />
+            );
+        });
+
         return <Flex flexDirection="column" style={{ gap: 12 }}>{options}</Flex>;
     }
 
@@ -195,28 +207,31 @@ export default function PluginModal({ plugin, onRestartNeeded, onClose, transiti
                 </Forms.FormSection>
             </ModalContent>
             <ModalFooter>
-                <Flex>
-                    <Button
-                        onClick={onClose}
-                        size={Button.Sizes.SMALL}
-                        color={Button.Colors.RED}
-                    >
-                        Exit Without Saving
-                    </Button>
-                    <Tooltip text="You must fix all errors before saving" shouldShow={!canSubmit()}>
-                        {({ onMouseEnter, onMouseLeave }) => (
-                            <Button
-                                size={Button.Sizes.SMALL}
-                                color={Button.Colors.BRAND}
-                                onClick={saveAndClose}
-                                onMouseEnter={onMouseEnter}
-                                onMouseLeave={onMouseLeave}
-                                disabled={!canSubmit()}
-                            >
-                                Save & Exit
-                            </Button>
-                        )}
-                    </Tooltip>
+                <Flex flexDirection="column" style={{ width: "100%" }}>
+                    <Flex style={{ marginLeft: "auto" }}>
+                        <Button
+                            onClick={onClose}
+                            size={Button.Sizes.SMALL}
+                            color={Button.Colors.RED}
+                        >
+                            Exit Without Saving
+                        </Button>
+                        <Tooltip text="You must fix all errors before saving" shouldShow={!canSubmit()}>
+                            {({ onMouseEnter, onMouseLeave }) => (
+                                <Button
+                                    size={Button.Sizes.SMALL}
+                                    color={Button.Colors.BRAND}
+                                    onClick={saveAndClose}
+                                    onMouseEnter={onMouseEnter}
+                                    onMouseLeave={onMouseLeave}
+                                    disabled={!canSubmit()}
+                                >
+                                    Save & Exit
+                                </Button>
+                            )}
+                        </Tooltip>
+                    </Flex>
+                    {saveError && <Text variant="text-md/semibold" style={{ color: "var(--text-danger)" }}>Error while saving: {saveError}</Text>}
                 </Flex>
             </ModalFooter>
         </ModalRoot>

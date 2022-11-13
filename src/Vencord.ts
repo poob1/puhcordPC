@@ -18,20 +18,19 @@
 
 export * as Api from "./api";
 export * as Plugins from "./plugins";
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export * as Util from "./utils";
 export * as QuickCss from "./utils/quickCss";
 export * as Updater from "./utils/updater";
 export * as Webpack from "./webpack";
+export { PlainSettings, Settings };
+
+import "./utils/quickCss";
+import "./webpack/patchWebpack";
 
 import { popNotice, showNotice } from "./api/Notices";
-import { PlainSettings,Settings } from "./api/settings";
-import { startAllPlugins } from "./plugins";
-
-export { PlainSettings,Settings };
-
-import "./webpack/patchWebpack";
-import "./utils/quickCss";
-
+import { PlainSettings, Settings } from "./api/settings";
+import { patches, PMLogger, startAllPlugins } from "./plugins";
 import { checkForUpdates, UpdateLogger } from "./utils/updater";
 import { onceReady } from "./webpack";
 import { Router } from "./webpack/common";
@@ -60,6 +59,19 @@ async function init() {
         } catch (err) {
             UpdateLogger.error("Failed to check for updates", err);
         }
+    }
+
+    if (IS_DEV) {
+        const pendingPatches = patches.filter(p => !p.all && p.predicate?.() !== false);
+        if (pendingPatches.length)
+            PMLogger.warn(
+                "Webpack has finished initialising, but some patches haven't been applied yet.",
+                "This might be expected since some Modules are lazy loaded, but please verify",
+                "that all plugins are working as intended.",
+                "You are seeing this warning because this is a Development build of Vencord.",
+                "\nThe following patches have not been applied:",
+                "\n\n" + pendingPatches.map(p => `${p.plugin}: ${p.find}`).join("\n")
+            );
     }
 }
 

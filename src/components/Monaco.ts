@@ -18,8 +18,8 @@
 
 import monacoHtml from "~fileContent/monacoWin.html";
 
-import { IpcEvents } from "../utils";
 import { debounce } from "../utils/debounce";
+import IpcEvents from "../utils/IpcEvents";
 import { Queue } from "../utils/Queue";
 import { find } from "../webpack/webpack";
 
@@ -33,10 +33,12 @@ export async function launchMonacoEditor() {
 
     win.setCss = setCss;
     win.getCurrentCss = () => VencordNative.ipc.invoke(IpcEvents.GET_QUICK_CSS);
-    win.getTheme = () => find(m => m.ProtoClass?.typeName.endsWith("PreloadedUserSettings"))
-        .getCurrentValue().appearance.theme === 1
-        ? "vs-dark"
-        : "vs-light";
+    win.getTheme = () =>
+        find(m =>
+            m.ProtoClass?.typeName.endsWith("PreloadedUserSettings")
+        )?.getCurrentValue()?.appearance?.theme === 2
+            ? "vs-light"
+            : "vs-dark";
 
     win.document.write(monacoHtml);
 }

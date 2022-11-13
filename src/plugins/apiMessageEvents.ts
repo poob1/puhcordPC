@@ -28,14 +28,14 @@ export default definePlugin({
             find: "sendMessage:function",
             replacement: [{
                 match: /(?<=_sendMessage:function\([^)]+\)){/,
-                replace: "{Vencord.Api.MessageEvents._handlePreSend(...arguments);"
+                replace: "{if(Vencord.Api.MessageEvents._handlePreSend(...arguments)){return;};"
             }, {
                 match: /(?<=\beditMessage:function\([^)]+\)){/,
                 replace: "{Vencord.Api.MessageEvents._handlePreEdit(...arguments);"
             }]
         },
         {
-            find: "if(e.altKey){",
+            find: '("interactionUsernameProfile',
             replacement: {
                 match: /var \w=(\w)\.id,\w=(\w)\.id;return .{1,2}\.useCallback\(\(?function\((.{1,2})\){/,
                 replace: (m, message, channel, event) =>

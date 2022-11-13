@@ -30,22 +30,10 @@ export default definePlugin({
         find: "().versionHash",
         replacement: [
             {
-                match: /\w\.createElement\(.{1,2}.Fragment,.{0,30}\{[^}]+\},"Host ".+?\):null/,
-                replace: m => {
-                    const idx = m.indexOf("Host") - 1;
-                    const template = m.slice(0, idx);
-                    const additionalInfo = IS_WEB
-                        ? " (Web)"
-                        : IS_STANDALONE
-                            ? " (Standalone)"
-                            : "";
-
-                    let r = `${m}, ${template}"da puhcordPC ", "${gitHash}${additionalInfo}"), " ")`;
-                    if (!IS_WEB) {
-                        r += `,${template} "Electron ",VencordNative.getVersions().electron)," "),`;
-                        r += `${template} "Chrome ",VencordNative.getVersions().chrome)," ")`;
-                    }
-                    return r;
+                match: /\[\(0,.{1,3}\.jsxs?\)\((.{1,10}),(\{[^{}}]+\{.{0,20}\(\)\.versionHash,.+?\})\)," "/,
+                replace: (m, component, props) => {
+                    props = props.replace(/children:\[.+\]/, "");
+                    return `${m},Vencord.Plugins.plugins.Settings.makeInfoElements(${component}, ${props})`;
                 }
             }
         ]
@@ -55,14 +43,31 @@ export default definePlugin({
             match: /\{section:(.{1,2})\.ID\.HEADER,\s*label:(.{1,2})\..{1,2}\.Messages\.ACTIVITY_SETTINGS\}/,
             replace: (m, mod) => {
                 const updater = !IS_WEB ? '{section:"VencordUpdater",label:"Updater",element:Vencord.Components.Updater},' : "";
+                const patchHelper = IS_DEV ? '{section:"VencordPatchHelper",label:"PatchHelper",element:Vencord.Components.PatchHelper},' : "";
                 return (
                     `{section:${mod}.ID.HEADER,label:"puhcord"},` +
                     '{section:"VencordSetting",label:"puhcordPC",element:Vencord.Components.Settings},' +
                     '{section:"VencordPlugins",label:"da plugins",element:Vencord.Components.PluginSettings},' +
                     updater +
+                    patchHelper +
                     `{section:${mod}.ID.DIVIDER},${m}`
                 );
             }
         }
-    }]
+    }],
+
+    makeInfoElements(Component: React.ComponentType<React.PropsWithChildren>, props: React.PropsWithChildren) {
+        const additionalInfo = IS_WEB
+            ? " (Web)"
+            : IS_STANDALONE
+                ? " (Standalone)"
+                : "";
+        return (
+            <>
+                <Component {...props}>Vencord {gitHash}{additionalInfo}</Component>
+                <Component {...props}>Electron {VencordNative.getVersions().electron}</Component>
+                <Component {...props}>Chromium {VencordNative.getVersions().chrome}</Component>
+            </>
+        );
+    }
 });

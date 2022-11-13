@@ -19,21 +19,16 @@
 
 import esbuild from "esbuild";
 
-import { commonOpts, gitHash, globPlugins, isStandalone } from "./common.mjs";
+import { commonOpts, globPlugins, isStandalone, watch } from "./common.mjs";
 
 const defines = {
-    IS_STANDALONE: isStandalone
+    IS_STANDALONE: isStandalone,
+    IS_DEV: JSON.stringify(watch)
 };
 if (defines.IS_STANDALONE === "false")
     // If this is a local build (not standalone), optimise
     // for the specific platform we're on
     defines["process.platform"] = JSON.stringify(process.platform);
-
-const header = `
-// Vencord ${gitHash}
-// Standalone: ${defines.IS_STANDALONE}
-// Platform: ${defines["process.platform"] || "Universal"}
-`.trim();
 
 /**
  * @type {esbuild.BuildOptions}
@@ -47,25 +42,25 @@ const nodeCommonOpts = {
     bundle: true,
     external: ["electron", ...commonOpts.external],
     define: defines,
-    banner: {
-        js: header
-    }
 };
+
+const sourceMapFooter = s => watch ? "" : `//# sourceMappingURL=vencord://${s}.js.map`;
+const sourcemap = watch ? "inline" : "external";
 
 await Promise.all([
     esbuild.build({
         ...nodeCommonOpts,
         entryPoints: ["src/preload.ts"],
         outfile: "dist/preload.js",
-        footer: { js: "//# sourceURL=VencordPreload\n//# sourceMappingURL=vencord://preload.js.map" },
-        sourcemap: "external",
+        footer: { js: "//# sourceURL=VencordPreload\n" + sourceMapFooter("preload") },
+        sourcemap,
     }),
     esbuild.build({
         ...nodeCommonOpts,
         entryPoints: ["src/patcher.ts"],
         outfile: "dist/patcher.js",
-        footer: { js: "//# sourceURL=VencordPatcher\n//# sourceMappingURL=vencord://patcher.js.map" },
-        sourcemap: "external",
+        footer: { js: "//# sourceURL=VencordPatcher\n" + sourceMapFooter("patcher") },
+        sourcemap,
     }),
     esbuild.build({
         ...commonOpts,
@@ -73,16 +68,16 @@ await Promise.all([
         outfile: "dist/renderer.js",
         format: "iife",
         target: ["esnext"],
-        footer: { js: "//# sourceURL=VencordRenderer\n//# sourceMappingURL=vencord://renderer.js.map" },
+        footer: { js: "//# sourceURL=VencordRenderer\n" + sourceMapFooter("renderer") },
         globalName: "Vencord",
-        sourcemap: "external",
+        sourcemap,
         plugins: [
             globPlugins,
             ...commonOpts.plugins
         ],
         define: {
-            IS_WEB: "false",
-            IS_STANDALONE: isStandalone
+            ...defines,
+            IS_WEB: false
         }
     }),
 ]).catch(err => {
