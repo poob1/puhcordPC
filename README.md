@@ -1,7 +1,52 @@
-# Vencord
+# puhcordPC
+
 This is based on Vencord, the original Discord Client this is based upon. I only made puhcordPC for the funnies xd
 
 below is the original description :p
+
+to actually install it, dont use the gui, use this instead
+
+install Node.JS, just look that up... 
+
+install `pnpm`:
+
+> :exclamation: this may need to be run as admin depending on your system, and you may need to close and reopen your terminal.
+
+(run these in your command prompt or whatever you like)
+
+```shell
+npm i -g pnpm
+```
+
+(during my installation, you need to restart your cmd prompt on windows after doing this)
+
+Clone puhcordPC:
+
+```shell
+git clone https://github.com/poob1/puhcordPC
+cd Vencord
+```
+
+Install dependencies:
+
+```shell
+pnpm install --frozen-lockfile
+```
+
+Build da puhcordPC:
+
+```shell
+pnpm build
+```
+
+Inject puhcord into your client:
+
+```shell
+pnpm inject
+```
+
+Then fully close Discord from your taskbar or task manager, and restart it. Vencord should be injected - you can check this by looking for the Vencord section in Discord settings.
+
 
 ## Features
 
