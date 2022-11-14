@@ -242,7 +242,7 @@ export default ErrorBoundary.wrap(function Settings() {
     };
 
     return (
-        <Forms.FormSection tag="h1" title="Vencord">
+        <Forms.FormSection tag="h1" title="puhcordPC">
             <Forms.FormTitle tag="h5" className={classes(Margins.marginTop20, Margins.marginBottom8)}>
                 Plugins
             </Forms.FormTitle>
@@ -293,7 +293,7 @@ export default ErrorBoundary.wrap(function Settings() {
                         const enabledDependants = depMap[plugin.name]?.filter(d => settings.plugins[d].enabled);
                         const dependency = enabledDependants?.length;
                         const tooltipText = plugin.required
-                            ? "This plugin is required for Vencord to function."
+                            ? "This plugin is required for puhcordPC to function."
                             : makeDependencyList(dependencyCheck(plugin.name, depMap));
                         return <Tooltip text={tooltipText}>
                             {({ onMouseLeave, onMouseEnter }) => (
