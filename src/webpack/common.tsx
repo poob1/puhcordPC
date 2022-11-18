@@ -142,14 +142,14 @@ waitFor(filters.byCode("helpdeskArticleId"), m => Switch = m);
 waitFor(["Positions", "Colors"], m => Tooltip = m);
 waitFor(m => m.Types?.PRIMARY === "cardPrimary", m => Card = m);
 
-waitFor(m => m.Tags && filters.byCode("errorSeparator")(m), m => Forms.FormTitle = m);
-waitFor(m => m.Tags && filters.byCode("titleClassName", "sectionTitle")(m), m => Forms.FormSection = m);
+waitFor(filters.byCode("errorSeparator"), m => Forms.FormTitle = m);
+waitFor(filters.byCode("titleClassName", "sectionTitle"), m => Forms.FormSection = m);
 waitFor(m => m.Types?.INPUT_PLACEHOLDER, m => Forms.FormText = m);
 
 waitFor(m => {
     if (typeof m !== "function") return false;
     const s = m.toString();
-    return s.length < 200 && s.includes("divider");
+    return s.length < 200 && s.includes("().divider");
 }, m => Forms.FormDivider = m);
 
 // This is the same module but this is easier
@@ -172,7 +172,7 @@ export type TextProps = React.PropsWithChildren & {
     variant: TextVariant;
     style?: React.CSSProperties;
     color?: string;
-    tag?: "div" | "span" | "p" | "strong";
+    tag?: "div" | "span" | "p" | "strong" | `h${1 | 2 | 3 | 4 | 5 | 6}`;
     selectable?: boolean;
     lineClamp?: number;
     id?: string;

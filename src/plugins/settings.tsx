@@ -56,17 +56,36 @@ export default definePlugin({
         }
     }],
 
+    get electronVersion() {
+        return VencordNative.getVersions().electron || window.armcord?.electron || null;
+    },
+
+    get chromiumVersion() {
+        try {
+            return VencordNative.getVersions().chrome
+                // @ts-ignore Typescript will add userAgentData IMMEDIATELY
+                || navigator.userAgentData?.brands?.find(b => b.brand === "Chromium" || b.brand === "Google Chrome")?.version
+                || null;
+        } catch { // inb4 some stupid browser throws unsupported error for navigator.userAgentData, it's only in chromium
+            return null;
+        }
+    },
+
+    get additionalInfo() {
+        if (IS_DEV) return " (Dev)";
+        if (IS_WEB) return " (Web)";
+        if (IS_STANDALONE) return " (Standalone)";
+        return "";
+    },
+
     makeInfoElements(Component: React.ComponentType<React.PropsWithChildren>, props: React.PropsWithChildren) {
-        const additionalInfo = IS_WEB
-            ? " (Web)"
-            : IS_STANDALONE
-                ? " (Standalone)"
-                : "";
+        const { electronVersion, chromiumVersion, additionalInfo } = this;
+
         return (
             <>
                 <Component {...props}>puhcordPC {gitHash}{additionalInfo}</Component>
-                <Component {...props}>da electric {VencordNative.getVersions().electron}</Component>
-                <Component {...props}>da chromium {VencordNative.getVersions().chrome}</Component>
+                {electronVersion && <Component {...props}>da Electronic {electronVersion}</Component>}
+                {chromiumVersion && <Component {...props}>chrom {chromiumVersion}</Component>}
             </>
         );
     }
