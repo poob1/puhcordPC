@@ -16,11 +16,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { popNotice,showNotice } from "../api/Notices";
+import { popNotice, showNotice } from "../api/Notices";
 import { Link } from "../components/Link";
 import { Devs } from "../utils/constants";
+import { lazyWebpack } from "../utils/misc";
 import definePlugin from "../utils/types";
+import { filters, mapMangledModuleLazy } from "../webpack";
 import { FluxDispatcher, Forms, Toasts } from "../webpack/common";
+
+const assetManager = mapMangledModuleLazy(
+    "getAssetImage: size must === [number, number] for Twitch",
+    {
+        getAsset: filters.byCode("apply("),
+    }
+);
+
+const rpcManager = lazyWebpack(filters.byCode(".APPLICATION_RPC("));
+
+async function lookupAsset(applicationId: string, key: string): Promise<string> {
+    return (await assetManager.getAsset(applicationId, [key, undefined]))[0];
+}
+
+const apps: any = {};
+async function lookupApp(applicationId: string): Promise<string> {
+    const socket: any = {};
+    await rpcManager.lookupApp(socket, applicationId);
+    return socket.application;
+}
 
 let ws: WebSocket;
 export default definePlugin({
@@ -42,8 +64,18 @@ export default definePlugin({
         if (ws) ws.close();
         ws = new WebSocket("ws://127.0.0.1:1337"); // try to open WebSocket
 
-        ws.onmessage = e => { // on message, set status to data
+        ws.onmessage = async e => { // on message, set status to data
             const data = JSON.parse(e.data);
+
+            if (data.activity?.assets?.large_image) data.activity.assets.large_image = await lookupAsset(data.activity.application_id, data.activity.assets.large_image);
+            if (data.activity?.assets?.small_image) data.activity.assets.small_image = await lookupAsset(data.activity.application_id, data.activity.assets.small_image);
+
+            const appId = data.activity.application_id;
+            if (!apps[appId]) apps[appId] = await lookupApp(appId);
+
+            const app = apps[appId];
+            if (!data.activity.name) data.activity.name = app.name;
+
             FluxDispatcher.dispatch({ type: "LOCAL_ACTIVITY_UPDATE", ...data });
         };
 
