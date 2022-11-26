@@ -40,16 +40,16 @@ interface SettingsProps {
 }
 
 const SettingsTabs = {
-    VencordSettings: { name: "Vencord", component: () => <VencordSettings /> },
-    VencordPlugins: { name: "Plugins", component: () => <PluginsTab /> },
-    VencordThemes: { name: "Themes", component: () => <Text variant="text-md/medium">Coming soon to a Vencord near you!</Text> },
-    VencordUpdater: { name: "Updater", component: () => Updater ? <Updater /> : null },
+    VencordSettings: { name: "puhcordPC", component: () => <VencordSettings /> },
+    VencordPlugins: { name: "da guhings", component: () => <PluginsTab /> },
+    VencordThemes: { name: "da themes", component: () => <Text variant="text-md/medium">Coming soon to a puhcordPC near you!</Text> },
+    VencordUpdater: { name: "da updater", component: () => Updater ? <Updater /> : null },
     VencordSettingsSync: { name: "Backup & Restore", component: () => <BackupRestoreTab /> },
 };
 
 
 function Settings(props: SettingsProps) {
-    const { tab = "VencordSettings" } = props;
+    const { tab = "puhcordPC Settings" } = props;
 
     const CurrentTab = SettingsTabs[tab]?.component ?? null;
 
