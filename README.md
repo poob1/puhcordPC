@@ -24,7 +24,7 @@ Clone puhcordPC:
 
 ```shell
 git clone https://github.com/poob1/puhcordPC
-cd Vencord
+cd puhcordPC
 ```
 
 Install dependencies:
