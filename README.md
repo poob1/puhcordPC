@@ -45,7 +45,7 @@ Inject puhcord into your client:
 pnpm inject
 ```
 
-Then fully close Discord from your taskbar or task manager, and restart it. puhcordPc should be injected - you can check this by looking for the puhcordPC section in Discord settings.
+Then fully close Discord from your taskbar or task manager, and restart it. puhcordPCshould be injected - you can check this by looking for the puhcordPC section in Discord settings.
 
 
 ## Features
