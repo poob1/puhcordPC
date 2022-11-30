@@ -45,7 +45,11 @@ interface SettingsTab {
 }
 
 const SettingsTabs: Record<string, SettingsTab> = {
+<<<<<<< HEAD
     VencordSettings: { name: "puhcordPC", component: () => <VencordSettings /> },
+=======
+    VencordSettings: { name: "Vencord", component: () => <VencordSettings /> },
+>>>>>>> fc09460d82dc30e7393a659411f40bc011528294
     VencordPlugins: { name: "Plugins", component: () => <PluginsTab /> },
     VencordThemes: { name: "Themes", component: () => <Text variant="text-md/medium">Coming soon to a Vencord near you!</Text> },
     VencordUpdater: { name: "Updater" }, // Only show updater if IS_WEB is false
