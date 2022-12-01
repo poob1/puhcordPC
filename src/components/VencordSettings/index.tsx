@@ -24,6 +24,7 @@ import cssText from "~fileContent/settingsStyles.css";
 
 import BackupRestoreTab from "./BackupRestoreTab";
 import PluginsTab from "./PluginsTab";
+import ThemesTab from "./ThemesTab";
 import Updater from "./Updater";
 import VencordSettings from "./VencordTab";
 
@@ -51,7 +52,7 @@ const SettingsTabs: Record<string, SettingsTab> = {
     VencordSettings: { name: "Vencord", component: () => <VencordSettings /> },
 >>>>>>> fc09460d82dc30e7393a659411f40bc011528294
     VencordPlugins: { name: "Plugins", component: () => <PluginsTab /> },
-    VencordThemes: { name: "Themes", component: () => <Text variant="text-md/medium">Coming soon to a Vencord near you!</Text> },
+    VencordThemes: { name: "Themes", component: () => <ThemesTab /> },
     VencordUpdater: { name: "Updater" }, // Only show updater if IS_WEB is false
     VencordSettingsSync: { name: "Backup & Restore", component: () => <BackupRestoreTab /> },
 };
