@@ -22,12 +22,14 @@ import DonateButton from "@components/DonateButton";
 import ErrorBoundary from "@components/ErrorBoundary";
 import IpcEvents from "@utils/IpcEvents";
 import { useAwaiter } from "@utils/misc";
-import { Button, Card, Forms, React, Switch } from "@webpack/common";
+import { Button, Card, Forms, Margins, React, Switch } from "@webpack/common";
 
 const st = (style: string) => `vcSettings${style}`;
 
 function VencordSettings() {
-    const [settingsDir, , settingsDirPending] = useAwaiter(() => VencordNative.ipc.invoke<string>(IpcEvents.GET_SETTINGS_DIR), "Loading...");
+    const [settingsDir, , settingsDirPending] = useAwaiter(() => VencordNative.ipc.invoke<string>(IpcEvents.GET_SETTINGS_DIR), {
+        fallbackValue: "Loading..."
+    });
     const settings = useSettings();
 
     const [donateImage] = React.useState(
@@ -81,11 +83,14 @@ function VencordSettings() {
             <Forms.FormDivider />
 
             <Forms.FormSection title="Settings">
+                <Forms.FormText className={Margins.marginBottom20}>
+                    Hint: You can change the position of this settings section in the settings of the "Settings" plugin!
+                </Forms.FormText>
                 <Switch
                     value={settings.useQuickCss}
                     onChange={(v: boolean) => settings.useQuickCss = v}
-                    note="Loads styles from your QuickCss file">
-                    Use QuickCss
+                    note="Loads styles from your QuickCSS file">
+                    Use QuickCSS
                 </Switch>
                 {!IS_WEB && (
                     <React.Fragment>
@@ -98,8 +103,8 @@ function VencordSettings() {
                         <Switch
                             value={settings.notifyAboutUpdates}
                             onChange={(v: boolean) => settings.notifyAboutUpdates = v}
-                            note="Shows a Toast on StartUp">
-                            Get notified about new Updates
+                            note="Shows a toast on startup">
+                            Get notified about new updates
                         </Switch>
                     </React.Fragment>
                 )}
@@ -126,7 +131,7 @@ function DonateCard({ image }: DonateCardProps) {
             <div>
                 <Forms.FormTitle tag="h5">Support the Project</Forms.FormTitle>
                 <Forms.FormText>
-                    Please consider supporting the Development of Vencord by donating!
+                    Please consider supporting the development of Vencord by donating!
                 </Forms.FormText>
                 <DonateButton style={{ transform: "translateX(-1em)" }} />
             </div>
