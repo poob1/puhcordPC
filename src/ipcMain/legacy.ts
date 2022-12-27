@@ -16,6 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-export const VencordFragment = /* #__PURE__*/ Symbol.for("react.fragment");
-export let VencordCreateElement =
-    (...args) => (VencordCreateElement = Vencord.Webpack.Common.React.createElement)(...args);
+import IpcEvents from "@utils/IpcEvents";
+import { ipcMain } from "electron";
+import { writeFile } from "fs/promises";
+import { join } from "path";
+
+import { get } from "./simpleGet";
+
+ipcMain.handleOnce(IpcEvents.DOWNLOAD_VENCORD_CSS, async () => {
+    const buf = await get("https://github.com/Vendicated/Vencord/releases/download/devbuild/renderer.css");
+    await writeFile(join(__dirname, "renderer.css"), buf);
+    return buf.toString("utf-8");
+});
+

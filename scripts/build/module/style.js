@@ -16,6 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-export const VencordFragment = /* #__PURE__*/ Symbol.for("react.fragment");
-export let VencordCreateElement =
-    (...args) => (VencordCreateElement = Vencord.Webpack.Common.React.createElement)(...args);
+(window.VencordStyles ??= new Map()).set(STYLE_NAME, {
+    name: STYLE_NAME,
+    source: STYLE_SOURCE,
+    classNames: {},
+    dom: null,
+});
+
+export default STYLE_NAME;
