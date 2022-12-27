@@ -104,12 +104,9 @@ const PlatformIndicator = ({ user, inline = false, marginLeft = "4px" }: { user:
 
     if (!icons.length) return null;
 
-    const indicator =
-        <span
+    return (
+        <div
             className="vc-platform-indicator"
-<<<<<<< HEAD
-            style={{ marginLeft: "4px", gap: "4px" }}
-=======
             style={{
                 marginLeft,
                 gap: "4px",
@@ -117,47 +114,10 @@ const PlatformIndicator = ({ user, inline = false, marginLeft = "4px" }: { user:
                 alignItems: "center",
                 transform: inline ? "translateY(4px)" : undefined
             }}
->>>>>>> 2e5d27b6b63097e96e25819df7a8cdd667c521b3
         >
             {icons}
-        </span>;
-
-    return indicator;
-};
-
-const badge: ProfileBadge = {
-    component: PlatformIndicator,
-    position: BadgePosition.START,
-    shouldShow: userInfo => !!Object.keys(getStatus(userInfo.user.id) ?? {}).length,
-    key: "indicator"
-};
-
-const indicatorLocations = {
-    list: {
-        description: "In the member list",
-        onEnable: () => addDecorator("platform-indicator", props =>
-            <ErrorBoundary noop>
-                <PlatformIndicator user={props.user} />
-            </ErrorBoundary>
-        ),
-        onDisable: () => removeDecorator("platform-indicator")
-    },
-    badges: {
-        description: "In user profiles, as badges",
-        onEnable: () => addBadge(badge),
-        onDisable: () => removeBadge(badge)
-    },
-    messages: {
-        description: "Inside messages",
-        onEnable: () => addDecoration("platform-indicator", props =>
-            <ErrorBoundary noop>
-                <PlatformIndicator user={
-                    props.decorations[1]?.find(i => i.key === "new-member")?.props.message?.author
-                } />
-            </ErrorBoundary>
-        ),
-        onDisable: () => removeDecoration("platform-indicator")
-    }
+        </div>
+    );
 };
 
 const badge: ProfileBadge = {
@@ -235,11 +195,7 @@ export default definePlugin({
                     description: `Show indicators ${value.description.toLowerCase()}`,
                     // onChange doesn't give any way to know which setting was changed, so restart required
                     restartNeeded: true,
-<<<<<<< HEAD
-                    default: false
-=======
                     default: true
->>>>>>> 2e5d27b6b63097e96e25819df7a8cdd667c521b3
                 }];
             })
         )
