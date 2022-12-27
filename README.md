@@ -8,6 +8,8 @@ to actually install it, dont use the gui, use this instead
 
 install Node.JS, just look that up... 
 
+also install `Git`, you need that lol
+
 install `pnpm`:
 
 > :exclamation: this may need to be run as admin depending on your system, and you may need to close and reopen your terminal.
