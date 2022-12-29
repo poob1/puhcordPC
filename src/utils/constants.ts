@@ -184,5 +184,9 @@ export const Devs = /* #__PURE__*/ Object.freeze({
     Sambot: {
         name: "Sambot",
         id: 705798778472366131n,
+      },
+    Samomen: {
+        name: "Samomen",
+        id: 711325368333893722n,
     },
 });
