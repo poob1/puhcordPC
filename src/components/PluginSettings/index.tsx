@@ -16,16 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+import "./styles.css";
+
 import * as DataStore from "@api/DataStore";
 import { showNotice } from "@api/Notices";
-import { Settings, useSettings } from "@api/settings";
+import { useSettings } from "@api/settings";
+import { classNameFactory } from "@api/Styles";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { ErrorCard } from "@components/ErrorCard";
 import { Flex } from "@components/Flex";
 import { handleComponentFailed } from "@components/handleComponentFailed";
 import { Badge } from "@components/PluginSettings/components";
 import PluginModal from "@components/PluginSettings/PluginModal";
-import * as styles from "@components/PluginSettings/styles";
 import { ChangeList } from "@utils/ChangeList";
 import Logger from "@utils/Logger";
 import { classes, LazyComponent, useAwaiter } from "@utils/misc";
@@ -35,6 +37,8 @@ import { findByCode, findByPropsLazy } from "@webpack";
 import { Alerts, Button, Forms, Margins, Parser, React, Select, Switch, Text, TextInput, Toasts, Tooltip } from "@webpack/common";
 
 import Plugins from "~plugins";
+
+const cl = classNameFactory("vc-plugins-");
 
 import { startDependenciesRecursive, startPlugin, stopPlugin } from "../../plugins";
 
@@ -67,8 +71,8 @@ function ReloadRequiredCard({ plugins, ...props }: ReloadRequiredCardProps) {
     const pluginSuffix = plugins.length === 1 ? " requires a reload to apply changes." : ".";
 
     return (
-        <ErrorCard {...props} style={{ padding: "1em", display: "grid", gridTemplateColumns: "1fr auto", gap: 8, ...props.style }}>
-            <span style={{ margin: "auto 0" }}>
+        <ErrorCard {...props} className={cl("reload-card")}>
+            <span className={cl("dep-text")}>
                 {pluginPrefix} <code>{plugins.join(", ")}</code>{pluginSuffix}
             </span>
             <Button look={Button.Looks.INVERTED} onClick={() => location.reload()}>Reload</Button>
@@ -86,8 +90,6 @@ interface PluginCardProps extends React.HTMLProps<HTMLDivElement> {
 function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, onMouseLeave, isNew }: PluginCardProps) {
     const settings = useSettings();
     const pluginSettings = settings.plugins[plugin.name];
-
-    const [iconHover, setIconHover] = React.useState(false);
 
     function isEnabled() {
         return pluginSettings?.enabled || plugin.started;
@@ -145,48 +147,25 @@ function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, onMouseLe
     }
 
     return (
-        <Flex style={styles.PluginsGridItem} flexDirection="column" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+        <Flex className={cl("card")} flexDirection="column" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
             <Switch
                 onChange={toggleEnabled}
                 disabled={disabled}
                 value={isEnabled()}
-                note={<Text variant="text-md/normal" style={{
-                    height: 40,
-                    overflow: "hidden",
-                    // mfw css is so bad you need whatever this is to get multi line overflow ellipsis to work
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box", // firefox users will cope (it doesn't support it)
-                    WebkitLineClamp: 2,
-                    lineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    boxOrient: "vertical"
-                }}>
-                    {plugin.description}
-                </Text>}
+                note={<Text className={cl("note")} variant="text-md/normal">{plugin.description}</Text>}
                 hideBorder={true}
             >
-                <Flex style={{ marginTop: "auto", width: "100%", height: "100%", alignItems: "center", gap: "8px" }}>
+                <Flex className={cl("flex")}>
                     <Text
                         variant="text-md/bold"
-                        style={{
-                            display: "flex", width: "100%", alignItems: "center", flexGrow: "1", gap: "8px"
-                        }}
+                        className={cl("name")}
                     >
-                        {plugin.name}{(isNew) && <Badge text="NEW" color="#ED4245" />}
+                        {plugin.name}{isNew && <Badge text="NEW" color="#ED4245" />}
                     </Text>
-                    <button role="switch" onClick={() => openModal()} style={styles.SettingsIcon} className="button-12Fmur">
+                    <button role="switch" onClick={() => openModal()} className={classes("button-12Fmur", cl("info-button"))}>
                         {plugin.options
-                            ? <CogWheel
-                                style={{ color: iconHover ? "" : "var(--text-muted)" }}
-                                onMouseEnter={() => setIconHover(true)}
-                                onMouseLeave={() => setIconHover(false)}
-                            />
-                            : <InfoIcon
-                                width="24" height="24"
-                                style={{ color: iconHover ? "" : "var(--text-muted)" }}
-                                onMouseEnter={() => setIconHover(true)}
-                                onMouseLeave={() => setIconHover(false)}
-                            />}
+                            ? <CogWheel />
+                            : <InfoIcon width="24" height="24" />}
                     </button>
                 </Flex>
             </Switch>
@@ -194,7 +173,13 @@ function PluginCard({ plugin, disabled, onRestartNeeded, onMouseEnter, onMouseLe
     );
 }
 
-export default ErrorBoundary.wrap(function Settings() {
+enum SearchStatus {
+    ALL,
+    ENABLED,
+    DISABLED
+}
+
+export default ErrorBoundary.wrap(function PluginSettings() {
     const settings = useSettings();
     const changes = React.useMemo(() => new ChangeList<string>(), []);
 
@@ -235,21 +220,19 @@ export default ErrorBoundary.wrap(function Settings() {
     const sortedPlugins = React.useMemo(() => Object.values(Plugins)
         .sort((a, b) => a.name.localeCompare(b.name)), []);
 
-    const [searchValue, setSearchValue] = React.useState({ value: "", status: "all" });
+    const [searchValue, setSearchValue] = React.useState({ value: "", status: SearchStatus.ALL });
 
     const onSearch = (query: string) => setSearchValue(prev => ({ ...prev, value: query }));
-    const onStatusChange = (status: string) => setSearchValue(prev => ({ ...prev, status }));
+    const onStatusChange = (status: SearchStatus) => setSearchValue(prev => ({ ...prev, status }));
 
     const pluginFilter = (plugin: typeof Plugins[keyof typeof Plugins]) => {
-        const showEnabled = searchValue.status === "enabled" || searchValue.status === "all";
-        const showDisabled = searchValue.status === "disabled" || searchValue.status === "all";
         const enabled = settings.plugins[plugin.name]?.enabled || plugin.started;
+        if (enabled && searchValue.status === SearchStatus.DISABLED) return false;
+        if (!enabled && searchValue.status === SearchStatus.ENABLED) return false;
+        if (!searchValue.value.length) return true;
         return (
-            ((showEnabled && enabled) || (showDisabled && !enabled)) &&
-            (
-                plugin.name.toLowerCase().includes(searchValue.value.toLowerCase()) ||
-                plugin.description.toLowerCase().includes(searchValue.value.toLowerCase())
-            )
+            plugin.name.toLowerCase().includes(searchValue.value.toLowerCase()) ||
+            plugin.description.toLowerCase().includes(searchValue.value.toLowerCase())
         );
     };
 
@@ -270,23 +253,69 @@ export default ErrorBoundary.wrap(function Settings() {
         return window._.isEqual(newPlugins, sortedPluginNames) ? [] : newPlugins;
     }));
 
+    type P = JSX.Element | JSX.Element[];
+    let plugins: P, requiredPlugins: P;
+    if (sortedPlugins?.length) {
+        plugins = [];
+        requiredPlugins = [];
+
+        for (const p of sortedPlugins) {
+            if (!pluginFilter(p)) continue;
+
+            const isRequired = p.required || depMap[p.name]?.some(d => settings.plugins[d].enabled);
+
+            if (isRequired) {
+                const tooltipText = p.required
+                    ? "This plugin is required for Vencord to function."
+                    : makeDependencyList(depMap[p.name]?.filter(d => settings.plugins[d].enabled));
+
+                requiredPlugins.push(
+                    <Tooltip text={tooltipText} key={p.name}>
+                        {({ onMouseLeave, onMouseEnter }) => (
+                            <PluginCard
+                                onMouseLeave={onMouseLeave}
+                                onMouseEnter={onMouseEnter}
+                                onRestartNeeded={name => changes.handleChange(name)}
+                                disabled={true}
+                                plugin={p}
+                            />
+                        )}
+                    </Tooltip>
+                );
+            } else {
+                plugins.push(
+                    <PluginCard
+                        onRestartNeeded={name => changes.handleChange(name)}
+                        disabled={false}
+                        plugin={p}
+                        isNew={newPlugins?.includes(p.name)}
+                        key={p.name}
+                    />
+                );
+            }
+
+        }
+    } else {
+        plugins = requiredPlugins = <Text variant="text-md/normal">No plugins meet search criteria.</Text>;
+    }
+
     return (
         <Forms.FormSection>
             <Forms.FormTitle tag="h5" className={classes(Margins.marginTop20, Margins.marginBottom8)}>
                 Filters
             </Forms.FormTitle>
 
-            <ReloadRequiredCard plugins={[...changes.getChanges()]} style={{ marginBottom: 16 }} />
+            <ReloadRequiredCard plugins={[...changes.getChanges()]} className={Margins.marginBottom20} />
 
-            <div style={styles.FiltersBar}>
-                <TextInput value={searchValue.value} placeholder={"Search for a plugin..."} onChange={onSearch} style={{ marginBottom: 24 }} />
+            <div className={cl("filter-controls")}>
+                <TextInput autoFocus value={searchValue.value} placeholder="Search for a plugin..." onChange={onSearch} className={Margins.marginBottom20} />
                 <div className={InputStyles.inputWrapper}>
                     <Select
                         className={InputStyles.inputDefault}
                         options={[
-                            { label: "Show All", value: "all", default: true },
-                            { label: "Show Enabled", value: "enabled" },
-                            { label: "Show Disabled", value: "disabled" }
+                            { label: "Show All", value: SearchStatus.ALL, default: true },
+                            { label: "Show Enabled", value: SearchStatus.ENABLED },
+                            { label: "Show Disabled", value: SearchStatus.DISABLED }
                         ]}
                         serialize={String}
                         select={onStatusChange}
@@ -298,50 +327,15 @@ export default ErrorBoundary.wrap(function Settings() {
 
             <Forms.FormTitle className={Margins.marginTop20}>Plugins</Forms.FormTitle>
 
-            <div style={styles.PluginsGrid}>
-                {sortedPlugins?.length ? sortedPlugins
-                    .filter(a => !a.required && !dependencyCheck(a.name, depMap).length && pluginFilter(a))
-                    .map(plugin => {
-                        const enabledDependants = depMap[plugin.name]?.filter(d => settings.plugins[d].enabled);
-                        const dependency = enabledDependants?.length;
-                        return <PluginCard
-                            onRestartNeeded={name => changes.add(name)}
-                            disabled={plugin.required || !!dependency}
-                            plugin={plugin}
-                            isNew={newPlugins?.includes(plugin.name)}
-                            key={plugin.name}
-                        />;
-                    })
-                    : <Text variant="text-md/normal">No plugins meet search criteria.</Text>
-                }
+            <div className={cl("grid")}>
+                {plugins}
             </div>
             <Forms.FormDivider />
             <Forms.FormTitle tag="h5" className={classes(Margins.marginTop20, Margins.marginBottom8)}>
                 Required Plugins
             </Forms.FormTitle>
-            <div style={styles.PluginsGrid}>
-                {sortedPlugins?.length ? sortedPlugins
-                    .filter(a => a.required || dependencyCheck(a.name, depMap).length && pluginFilter(a))
-                    .map(plugin => {
-                        const enabledDependants = depMap[plugin.name]?.filter(d => settings.plugins[d].enabled);
-                        const dependency = enabledDependants?.length;
-                        const tooltipText = plugin.required
-                            ? "This plugin is required for puhcordPC to function."
-                            : makeDependencyList(dependencyCheck(plugin.name, depMap));
-                        return <Tooltip text={tooltipText} key={plugin.name}>
-                            {({ onMouseLeave, onMouseEnter }) => (
-                                <PluginCard
-                                    onMouseLeave={onMouseLeave}
-                                    onMouseEnter={onMouseEnter}
-                                    onRestartNeeded={name => changes.handleChange(name)}
-                                    disabled={plugin.required || !!dependency}
-                                    plugin={plugin}
-                                />
-                            )}
-                        </Tooltip>;
-                    })
-                    : <Text variant="text-md/normal">No plugins meet search criteria.</Text>
-                }
+            <div className={cl("grid")}>
+                {requiredPlugins}
             </div>
         </Forms.FormSection >
     );
@@ -354,11 +348,7 @@ function makeDependencyList(deps: string[]) {
     return (
         <React.Fragment>
             <Forms.FormText>This plugin is required by:</Forms.FormText>
-            {deps.map((dep: string) => <Forms.FormText style={{ margin: "0 auto" }}>{dep}</Forms.FormText>)}
+            {deps.map((dep: string) => <Forms.FormText className={cl("dep-text")}>{dep}</Forms.FormText>)}
         </React.Fragment>
     );
-}
-
-function dependencyCheck(pluginName: string, depMap: Record<string, string[]>): string[] {
-    return depMap[pluginName]?.filter(d => Settings.plugins[d].enabled) || [];
 }

@@ -1,0 +1,103 @@
+/*
+ * Vencord, a modification for Discord's desktop app
+ * Copyright (c) 2022 Vendicated and contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+.vc-plugins-grid {
+    margin-top: 16px;
+    display: grid;
+    grid-gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+}
+
+.vc-plugins-card {
+    background-color: var(--background-modifier-selected);
+    color: var(--interactive-active);
+    border-radius: 3px;
+    display: block;
+    height: 100%;
+    padding: 10px;
+    width: 100%;
+}
+
+.vc-plugins-info-button {
+    height: 24px;
+    width: 24px;
+    padding: 0;
+    background: transparent;
+    margin-right: 8px;
+}
+
+.vc-plugins-filter-controls {
+    display: grid;
+    height: 40px;
+    gap: 10px;
+    grid-template-columns: 1fr 150px;
+}
+
+.vc-plugins-badge {
+    padding: 0 6px;
+    font-family: var(--font-display);
+    font-weight: 500;
+    border-radius: 8px;
+    height: 16px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--white-500);
+    text-align: center;
+}
+
+.vc-plugins-note {
+    height: 40px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    box-orient: vertical;
+}
+
+.vc-plugins-name {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    flex-grow: 1;
+    gap: 8px;
+}
+
+.vc-plugins-flex {
+    margin-top: auto;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    gap: 8px;
+}
+
+.vc-plugins-dep-name {
+    margin: 0 auto;
+}
+
+.vc-plugins-reload-card {
+    padding: 1em;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1em;
+}
+
+.vc-plugins-info-button svg:not(:hover):not(:focus) {
+    color: var(--text-muted);
+}

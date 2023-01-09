@@ -32,10 +32,10 @@ export default definePlugin({
     authors: [Devs.Ven, Devs.Megu],
     required: true,
     patches: [{
-        find: "().versionHash",
+        find: ".versionHash",
         replacement: [
             {
-                match: /\[\(0,.{1,3}\.jsxs?\)\((.{1,10}),(\{[^{}}]+\{.{0,20}\(\)\.versionHash,.+?\})\)," "/,
+                match: /\[\(0,.{1,3}\.jsxs?\)\((.{1,10}),(\{[^{}}]+\{.{0,20}.versionHash,.+?\})\)," "/,
                 replace: (m, component, props) => {
                     props = props.replace(/children:\[.+\]/, "");
                     return `${m},Vencord.Plugins.plugins.Settings.makeInfoElements(${component}, ${props})`;
@@ -82,7 +82,7 @@ export default definePlugin({
     options: {
         settingsLocation: {
             type: OptionType.SELECT,
-            description: "Where to put the Vencord settings section",
+            description: "Where to put the puhcord guhh settings section",
             options: [
                 { label: "At the very top", value: "top" },
                 { label: "Above the Nitro section", value: "aboveNitro" },
