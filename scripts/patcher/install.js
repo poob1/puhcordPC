@@ -21,7 +21,11 @@ const path = require("path");
 const fs = require("fs");
 const { execSync } = require("child_process");
 
+<<<<<<< HEAD
 console.log("\npuhcordPC Installer\n");
+=======
+console.log("\nVencord Installer\n");
+>>>>>>> parent of 6c5fcc4 (Use GUI installer for pnpm inject/uninject (#407))
 
 if (!fs.existsSync(path.join(process.cwd(), "node_modules"))) {
     console.log("You need to install dependencies first. Run:", "pnpm install --frozen-lockfile");
